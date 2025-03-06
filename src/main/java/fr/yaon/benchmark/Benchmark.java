@@ -1,44 +1,21 @@
 package fr.yaon.benchmark;
 
+import fr.yaon.utils.KafkaUtils;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
-import org.apache.kafka.clients.admin.CreateTopicsResult;
-import org.apache.kafka.clients.admin.NewTopic;
 
 import java.text.NumberFormat;
-import java.util.Collections;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 
 public class Benchmark {
-    private static void createTopic(AdminClient adminClient, String topicName, int numPartitions, short replicationFactor) {
-        try {
-            System.out.println("Creating topic: " + topicName);
-            NewTopic newTopic = new NewTopic(topicName, numPartitions, replicationFactor);
-            CreateTopicsResult result = adminClient.createTopics(Collections.singleton(newTopic));
-
-            result.all().get();
-        } catch (ExecutionException | InterruptedException e) {
-            System.err.println("Error creating topic: " + e.getMessage());
-        }
-    }
-
     private static void initBenchmark(Properties adminClientConfig, String bootstrapServers, String topicName, int numPartitions, short replicationFactor, int producerCount) {
         AdminClient adminClient = AdminClient.create(adminClientConfig);
 
-        try {
-            if (adminClient.listTopics().names().get().contains(topicName)) {
-                System.out.println("Topic already exists: " + topicName);
-                return;
-            }
-        } catch (InterruptedException | ExecutionException e) {
-            System.err.println("Error listing topics: " + e.getMessage());
-            return;
+        if (!KafkaUtils.topicExists(adminClient, topicName)) {
+            KafkaUtils.createTopic(adminClient, topicName, numPartitions, replicationFactor);
+            createMessages(bootstrapServers, producerCount, topicName);
         }
-
-        createTopic(adminClient, topicName, numPartitions, replicationFactor);
-        createMessages(bootstrapServers, producerCount, topicName);
     }
 
     private static void createMessages(String bootstrapServers, int producerCount, String topicName) {

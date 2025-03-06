@@ -9,10 +9,10 @@ import java.util.Properties;
 import java.util.UUID;
 
 public class Producer extends Thread{
-    private String bootstrapServers;
-    private String topicName;
-    private int messageCount;
-    private UUID uuid;
+    private final String bootstrapServers;
+    private final String topicName;
+    private final int messageCount;
+    private final UUID uuid;
 
     Producer(String topicName, String bootstrapServers, int messageCount) {
         this.bootstrapServers = bootstrapServers;
