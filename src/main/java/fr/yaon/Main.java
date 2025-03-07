@@ -10,16 +10,19 @@ public class Main {
     public static void main(String[] args) {
         String bootstrapServers = "localhost:9092";
         String topicName = "room-temp-measurements-topic";
-        int buildingNumbers = 1;
-        int minimumRoomNumbers = 2;
-        int maximumRoomNumbers = 2;
+        int buildingNumbers = 10;
+        int minimumRoomNumbers = 10;
+        int maximumRoomNumbers = 15;
 
         Properties config = new Properties();
         config.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         AdminClient adminClient = AdminClient.create(config);
 
         if (!KafkaUtils.topicExists(adminClient, topicName)) {
-            KafkaUtils.createTopic(adminClient, topicName, 1, (short) 1);
+            KafkaUtils.createTopic(adminClient, topicName, 1, (short) 2);
+        }
+        if (!KafkaUtils.topicExists(adminClient, "room-temp-averages")) {
+            KafkaUtils.createTopic(adminClient, "room-temp-averages", 1, (short) 2);
         }
 
         TempMeasurementProducer[][] producers = new TempMeasurementProducer[buildingNumbers][];
@@ -35,13 +38,6 @@ public class Main {
 
         TempMeasurementConsumer consumer = new TempMeasurementConsumer(topicName, bootstrapServers);
         consumer.start();
-
-        try{
-            consumer.join();
-            System.out.println("Consumer joined");
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
 
         try {
             for (TempMeasurementProducer[] buildingProducers : producers) {

@@ -33,6 +33,7 @@ public class TempMeasurementProducer extends Thread {
         KafkaProducer<Integer, String> producer = new KafkaProducer<>(props);
 
         try {
+            Thread.sleep((long) (Math.random() * 10000));
             while (true) {
                 double temp = previousTemp + Math.random() * 5 - 2.5;
                 previousTemp = temp;
