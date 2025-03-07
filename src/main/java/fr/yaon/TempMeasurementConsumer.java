@@ -1,8 +1,6 @@
 package fr.yaon;
 
-import fr.yaon.utils.DoubleArraySerde;
-import fr.yaon.utils.JsonPOJODeserializer;
-import fr.yaon.utils.JsonPOJOSerializer;
+import fr.yaon.utils.*;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.KeyValue;
@@ -11,6 +9,7 @@ import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.*;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 
 public class TempMeasurementConsumer extends Thread {
@@ -45,24 +44,25 @@ public class TempMeasurementConsumer extends Thread {
             return Collections.singletonList(KeyValue.pair(compositeKey, temperature));
         });
 
-        TimeWindows fiveMinuteWindow = TimeWindows.ofSizeWithNoGrace(Duration.ofSeconds(30));
-        KTable<Windowed<String>, double[]> aggregatedTable = roomTemperatures
+        TimeWindows fiveMinuteWindow = TimeWindows.ofSizeWithNoGrace(Duration.ofMinutes(5));
+
+        KTable<Windowed<String>, TemperatureData> aggregatedTable = roomTemperatures
                 .groupByKey(Grouped.with(Serdes.String(), Serdes.Double()))
                 .windowedBy(fiveMinuteWindow)
                 .aggregate(
-                        () -> new double[]{0.0, 0.0},
-                        (room, temperature, agg) -> new double[]{agg[0] + temperature, agg[1] + 1},
-                        Materialized.with(Serdes.String(), new DoubleArraySerde())
+                        () -> new TemperatureData(),
+                        (room, temperature, agg) -> agg.addTemperature(temperature),
+                        Materialized.with(Serdes.String(), new JsonSerdes<TemperatureData>())
                 );
 
         aggregatedTable.mapValues(aggregate ->
-                        aggregate[1] == 0 ? 0.0 : aggregate[0] / aggregate[1]
+                    aggregate.computeAverageTemperature()
                 ).toStream()
                 .foreach((windowedKey, avg) -> {
                     String key = windowedKey.key();
-                    long windowStart = windowedKey.window().start();
-                    long windowEnd = windowedKey.window().end();
-                    System.out.printf("Key: %s, Window: [%d, %d), Average: %.2f%n", key, windowStart, windowEnd, avg);
+                    String windowStart = Date.from(Instant.ofEpochMilli(windowedKey.window().start())).toString();
+                    String windowEnd = Date.from(Instant.ofEpochMilli(windowedKey.window().end())).toString();
+                    System.out.printf("Key: %s, Window: [%s, %s), Average: %.2f%n", key, windowStart, windowEnd, avg);
                 });
 
         KafkaStreams streams = new KafkaStreams(builder.build(), properties);
