@@ -62,7 +62,10 @@ public class TempMeasurementConsumer extends Thread {
                     String key = windowedKey.key();
                     String windowStart = Date.from(Instant.ofEpochMilli(windowedKey.window().start())).toString();
                     String windowEnd = Date.from(Instant.ofEpochMilli(windowedKey.window().end())).toString();
-                    System.out.printf("Key: %s, Window: [%s, %s), Average: %.2f%n", key, windowStart, windowEnd, avg);
+//                    System.out.printf("Key: %s, Window: [%s, %s), Average: %.2f%n", key, windowStart, windowEnd, avg);
+                    if(avg < 15 || avg > 25) {
+                        System.out.printf("Key: %s, Window: [%s, %s), Average: %.2f%n", key, windowStart, windowEnd, avg);
+                    }
                 });
 
         KafkaStreams streams = new KafkaStreams(builder.build(), properties);

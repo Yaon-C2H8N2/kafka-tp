@@ -21,9 +21,9 @@ public class Main {
         if (!KafkaUtils.topicExists(adminClient, topicName)) {
             KafkaUtils.createTopic(adminClient, topicName, 1, (short) 2);
         }
-        if (!KafkaUtils.topicExists(adminClient, "room-temp-averages")) {
-            KafkaUtils.createTopic(adminClient, "room-temp-averages", 1, (short) 2);
-        }
+//        if (!KafkaUtils.topicExists(adminClient, "room-temp-averages")) {
+//            KafkaUtils.createTopic(adminClient, "room-temp-averages", 1, (short) 2);
+//        }
 
         TempMeasurementProducer[][] producers = new TempMeasurementProducer[buildingNumbers][];
 
